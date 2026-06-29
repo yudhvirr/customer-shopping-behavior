@@ -1,0 +1,606 @@
+import streamlit as st
+import pandas as pd
+import plotly.express as px
+import os
+# PAGE CONFIG
+
+st.set_page_config(
+    page_title="Customer Shopping Behavior",
+    page_icon="🛒",
+    layout="wide"
+)
+# Connect CSS file
+with open("style.css", "r", encoding="utf-8") as css:
+    st.markdown(
+        f"<style>{css.read()}</style>",
+        unsafe_allow_html=True
+    )
+
+# LOAD DATA
+
+df = pd.read_csv("shopping_behavior_cleaned.csv")
+
+df.columns = (
+    df.columns
+    .str.lower()	
+    .str.replace(" ", "_")
+    .str.replace("(", "", regex=False)
+    .str.replace(")", "", regex=False)
+)
+
+# AGE GROUPS
+
+df["age_group"] = pd.cut(
+    df["age"],
+    bins=[18,30,45,60,80],
+    labels=["Young Adult","Adult","Middle Age","Senior"]
+)
+
+# SIDEBAR
+
+st.sidebar.title("📊 Navigation")
+
+page = st.sidebar.radio(
+    "Select Page",
+    [
+        "Home",
+        "Dashboard",
+        "Customer Analysis",
+        "Product Analysis",
+        "SQL Analysis",
+        "Power BI",
+        "Business Insights",
+        "Developer"
+    ]
+)
+
+# HOME PAGE
+
+if page == "Home":
+
+    st.title("🛒 Customer Shopping Behavior Analysis")
+
+    st.subheader("📖 Project Overview")
+
+    st.write("""
+    This project analyzes shopping behavior using transactional
+    data from 3,900 purchases across various product categories.
+    The goal is to uncover spending patterns, customer segments,
+    product preferences, and subscription behavior.
+    """)
+
+    st.subheader("🎯 Project Goals")
+
+    st.write("""
+    1. To analyze customer shopping behavior using transactional data.
+
+    2. To identify purchasing patterns among different customer segments.
+
+    3. To evaluate the impact of subscription status on revenue.
+
+    4. To determine top-performing products and categories.
+
+    5. To study the influence of age, gender, and season on sales.
+
+    6. To perform business analysis using SQL queries.
+
+    7. To develop interactive dashboards using Streamlit and Power BI.
+
+    8. To generate data-driven business insights and recommendations.
+    """)
+
+    st.subheader("🛠 Technology Stack")
+
+    st.write("""
+    ✔ Python
+
+    ✔ Pandas
+
+    ✔ NumPy
+
+    ✔ Matplotlib
+
+    ✔ Seaborn
+
+    ✔ MySQL
+
+    ✔ Power BI
+
+    ✔ Streamlit
+    """)
+
+    st.subheader("📂 Dataset Information")
+
+    st.write("""
+    • Dataset Size: 3,900 customer records
+
+    • Data Source: Customer Shopping Behavior Dataset
+
+    • Features: Age, Gender, Category, Purchase Amount,
+      Subscription Status, Review Rating, Season, Shipping Type,
+      Previous Purchases, and more.
+    """)
+
+    st.subheader("💡 Expected Outcomes")
+
+    st.write("""
+    • Identify high-value customers.
+
+    • Discover profitable product categories.
+
+    • Understand customer spending behavior.
+
+    • Improve business decision-making using data analytics.
+
+    • Provide actionable business recommendations.
+    """)
+
+# DASHBOARD
+
+elif page == "Dashboard":
+
+    st.title("📈 Executive Dashboard")
+
+    col1,col2,col3,col4 = st.columns(4)
+
+    col1.metric(
+        "Revenue",
+        f"${df['purchase_amount'].sum():,.0f}"
+    )
+
+    col2.metric(
+        "Customers",
+        len(df)
+    )
+
+    col3.metric(
+        "Average Purchase",
+        f"${df['purchase_amount'].mean():.2f}"
+    )
+
+    col4.metric(
+        "Average Rating",
+        round(df["review_rating"].mean(),2)
+    )
+
+    revenue = (
+        df.groupby("gender")
+        ["purchase_amount"]
+        .sum()
+        .reset_index()
+    )
+
+    fig = px.bar(
+        revenue,
+        x="gender",
+        y="purchase_amount",
+        title="Revenue by Gender"
+    )
+
+    st.plotly_chart(fig, use_container_width=True)
+
+# CUSTOMER ANALYSIS
+
+elif page == "Customer Analysis":
+
+    st.title("👥 Customer Analysis")
+
+    fig1 = px.pie(
+        df,
+        names="gender",
+        title="Gender Distribution"
+    )
+
+    st.plotly_chart(fig1)
+
+    fig2 = px.histogram(
+        df,
+        x="age_group",
+        title="Age Groups"
+    )
+
+    st.plotly_chart(fig2)
+
+    customer_segment = pd.cut(
+        df["previous_purchases"],
+        bins=[0,1,10,100],
+        labels=["New","Returning","Loyal"]
+    )
+
+    segment_df = customer_segment.value_counts()
+
+    st.bar_chart(segment_df)
+
+# PRODUCT ANALYSIS
+
+elif page == "Product Analysis":
+
+    st.title("🛍 Product Analysis")
+
+    top_products = (
+        df.groupby("item_purchased")
+        ["purchase_amount"]
+        .sum()
+        .sort_values(ascending=False)
+        .head(10)
+    )
+
+    st.bar_chart(top_products)
+
+    season = (
+        df.groupby("season")
+        ["purchase_amount"]
+        .sum()
+    )
+
+    st.line_chart(season)
+
+# SQL ANALYSIS
+
+elif page == "SQL Analysis":
+
+    st.title("🗄 SQL Business Analysis")
+
+    st.markdown(
+        "These analyses are based on important SQL business queries."
+    )
+
+    # Q1 Revenue by Gender
+
+    st.subheader(
+        "1. Revenue Generated by Gender"
+    )
+
+    st.code("""
+SELECT gender,
+SUM(purchase_amount)
+FROM customer
+GROUP BY gender;
+""", language="sql")
+
+    gender_rev = (
+        df.groupby("gender")
+        ["purchase_amount"]
+        .sum()
+        .reset_index()
+    )
+
+    fig1 = px.bar(
+        gender_rev,
+        x="gender",
+        y="purchase_amount",
+        title="Revenue by Gender",
+        text_auto=True
+    )
+
+    st.plotly_chart(
+        fig1,
+        use_container_width=True
+    )
+
+    # Q2 Subscription Analysis
+
+    st.subheader(
+        "2. Subscription Spending Analysis"
+    )
+
+    st.code("""
+SELECT subscription_status,
+AVG(purchase_amount),
+SUM(purchase_amount)
+FROM customer
+GROUP BY subscription_status;
+""", language="sql")
+
+    sub = (
+        df.groupby("subscription_status")
+        ["purchase_amount"]
+        .mean()
+        .reset_index()
+    )
+
+    fig2 = px.bar(
+        sub,
+        x="subscription_status",
+        y="purchase_amount",
+        title="Average Spending by Subscription Status",
+        text_auto=True
+    )
+
+    st.plotly_chart(
+        fig2,
+        use_container_width=True
+    )
+
+    # Q3 Customer Segmentation
+
+    st.subheader(
+        "3. Customer Segmentation"
+    )
+
+    st.code("""
+CASE
+WHEN previous_purchases = 1 THEN 'New'
+WHEN previous_purchases BETWEEN 2 AND 10 THEN 'Returning'
+ELSE 'Loyal'
+END
+""", language="sql")
+
+    df["customer_segment"] = pd.cut(
+        df["previous_purchases"],
+        bins=[0,1,10,100],
+        labels=[
+            "New",
+            "Returning",
+            "Loyal"
+        ]
+    )
+
+    segment = (
+        df["customer_segment"]
+        .value_counts()
+        .reset_index()
+    )
+
+    segment.columns = [
+        "Customer Segment",
+        "Count"
+    ]
+
+    fig3 = px.pie(
+        segment,
+        names="Customer Segment",
+        values="Count",
+        title="Customer Segments"
+    )
+
+    st.plotly_chart(
+        fig3,
+        use_container_width=True
+    )
+
+    st.success(
+        "Business Insight: Loyal and subscribed customers contribute significantly to overall revenue."
+    )
+    # POWER BI
+elif page == "Power BI":
+
+    st.title("📊 Power BI Dashboard")
+
+    # FILTERS
+
+    colf1, colf2 = st.columns(2)
+
+    with colf1:
+        gender = st.multiselect(
+            "Gender",
+            df["gender"].unique(),
+            default=df["gender"].unique()
+        )
+
+        category = st.multiselect(
+            "Category",
+            df["category"].unique(),
+            default=df["category"].unique()
+        )
+
+    with colf2:
+        subscription = st.multiselect(
+            "Subscription Status",
+            df["subscription_status"].unique(),
+            default=df["subscription_status"].unique()
+        )
+
+        shipping = st.multiselect(
+            "Shipping Type",
+            df["shipping_type"].unique(),
+            default=df["shipping_type"].unique()
+        )
+
+    filtered = df[
+        (df["gender"].isin(gender)) &
+        (df["category"].isin(category)) &
+        (df["subscription_status"].isin(subscription)) &
+        (df["shipping_type"].isin(shipping))
+    ]
+ 
+
+    # KPI CARDS
+
+    k1, k2, k3 = st.columns(3)
+
+    k1.metric(
+        "Customers",
+        len(filtered)
+    )
+
+    k2.metric(
+        "Average Purchase",
+        f"${filtered['purchase_amount'].mean():.2f}"
+    )
+
+    k3.metric(
+        "Average Rating",
+        round(filtered["review_rating"].mean(), 2)
+    )
+
+    st.markdown("---")
+
+    # FIRST ROW
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+
+        subscription_chart = (
+            filtered["subscription_status"]
+            .value_counts()
+            .reset_index()
+        )
+
+        subscription_chart.columns = [
+            "Subscription",
+            "Count"
+        ]
+
+        fig1 = px.pie(
+            subscription_chart,
+            names="Subscription",
+            values="Count",
+            hole=0.5,
+            title="% of Customers by Subscription"
+        )
+
+        st.plotly_chart(fig1, use_container_width=True)
+
+    with col2:
+
+        revenue = (
+            filtered.groupby("category")
+            ["purchase_amount"]
+            .sum()
+            .reset_index()
+        )
+
+        fig2 = px.bar(
+            revenue,
+            x="category",
+            y="purchase_amount",
+            title="Revenue by Category"
+        )
+
+        st.plotly_chart(fig2, use_container_width=True)
+
+    # SECOND ROW
+
+    col3, col4 = st.columns(2)
+
+    with col3:
+
+        age_revenue = (
+            filtered.groupby("age_group")
+            ["purchase_amount"]
+            .sum()
+            .reset_index()
+        )
+
+        fig3 = px.bar(
+            age_revenue,
+            x="purchase_amount",
+            y="age_group",
+            orientation="h",
+            title="Revenue by Age Group"
+        )
+
+        st.plotly_chart(fig3, use_container_width=True)
+
+    with col4:
+
+        age_sales = (
+            filtered.groupby("age_group")
+            .size()
+            .reset_index(name="Sales")
+        )
+
+        fig4 = px.bar(
+            age_sales,
+            x="Sales",
+            y="age_group",
+            orientation="h",
+            title="Sales by Age Group"
+        )
+
+        st.plotly_chart(fig4, use_container_width=True)
+
+    st.markdown("---")
+
+    st.subheader("Filtered Dataset")
+
+    st.dataframe(filtered.head(100))
+   #bi button
+if st.button("Open Power BI"):
+    try:
+        os.startfile("customer_behavior_dashboard.pbix")
+    except Exception:
+        st.warning(
+            "Open Power BI works only on your local computer."
+        )
+        
+    with open(
+    "customer_behavior_dashboard.pbix",
+    "rb"
+) as file:
+
+       st.download_button(
+        "📥 Download Power BI Dashboard",
+        data=file,
+        file_name="customer_behavior_dashboard.pbix",
+        mime="application/octet-stream"
+    )
+
+
+        
+
+# BUSINESS INSIGHTS
+
+elif page == "Business Insights":
+
+    st.title("💡 Business Recommendations")
+
+    st.success(
+        "Subscription customers spend more."
+    )
+
+    st.info(
+        "Top products should receive additional promotion."
+    )
+
+    st.warning(
+        "Discount strategies increase sales."
+    )
+
+    st.write("""
+    ### Key Findings
+
+    • Loyal customers generate significant revenue.
+
+    • Subscription customers spend more.
+
+    • Seasonal demand affects sales.
+
+    • Discounts improve customer engagement.
+    """)
+
+# DEVELOPER
+
+elif page == "Developer":
+
+    st.title("👨‍💻 Developer Profile")
+
+    st.write("### Yudhvir")
+
+    st.write("MCA Student")
+
+    st.write("Bahra University")
+
+    st.write("Roll No: BU2024PGMC18")
+
+    st.write("Academic Year: 2026")
+
+    st.write(
+        "GitHub: https://github.com/yudhvirr"
+    )
+
+    st.write(
+        "LinkedIn: https://www.linkedin.com/in/yudhvir-884aab3aa/"
+    )
+
+    st.write(
+        "Email: bu2024pgmc18@bahrauniversity.edu.in"
+    )
+
+st.markdown("---")
+
+st.caption(
+    "Developed by Yudhvir | MCA Major Project 2026"
+)
