@@ -368,7 +368,6 @@ elif page == "Power BI":
     st.title("📊 Power BI Dashboard")
 
     # FILTERS
-
     colf1, colf2 = st.columns(2)
 
     with colf1:
@@ -403,16 +402,11 @@ elif page == "Power BI":
         (df["subscription_status"].isin(subscription)) &
         (df["shipping_type"].isin(shipping))
     ]
- 
 
     # KPI CARDS
-
     k1, k2, k3 = st.columns(3)
 
-    k1.metric(
-        "Customers",
-        len(filtered)
-    )
+    k1.metric("Customers", len(filtered))
 
     k2.metric(
         "Average Purchase",
@@ -426,22 +420,17 @@ elif page == "Power BI":
 
     st.markdown("---")
 
-    # FIRST ROW
-
+    # CHARTS
     col1, col2 = st.columns(2)
 
     with col1:
-
         subscription_chart = (
             filtered["subscription_status"]
             .value_counts()
             .reset_index()
         )
 
-        subscription_chart.columns = [
-            "Subscription",
-            "Count"
-        ]
+        subscription_chart.columns = ["Subscription", "Count"]
 
         fig1 = px.pie(
             subscription_chart,
@@ -454,10 +443,8 @@ elif page == "Power BI":
         st.plotly_chart(fig1, use_container_width=True)
 
     with col2:
-
         revenue = (
-            filtered.groupby("category")
-            ["purchase_amount"]
+            filtered.groupby("category")["purchase_amount"]
             .sum()
             .reset_index()
         )
@@ -470,16 +457,11 @@ elif page == "Power BI":
         )
 
         st.plotly_chart(fig2, use_container_width=True)
-
-    # SECOND ROW
-
     col3, col4 = st.columns(2)
 
     with col3:
-
         age_revenue = (
-            filtered.groupby("age_group")
-            ["purchase_amount"]
+            filtered.groupby("age_group")["purchase_amount"]
             .sum()
             .reset_index()
         )
@@ -495,7 +477,6 @@ elif page == "Power BI":
         st.plotly_chart(fig3, use_container_width=True)
 
     with col4:
-
         age_sales = (
             filtered.groupby("age_group")
             .size()
@@ -515,32 +496,29 @@ elif page == "Power BI":
     st.markdown("---")
 
     st.subheader("Filtered Dataset")
-
     st.dataframe(filtered.head(100))
-   #bi button
-if st.button("Open Power BI"):
-    try:
-        os.startfile("customer_behavior_dashboard.pbix")
-    except Exception:
-        st.warning(
-            "Open Power BI works only on your local computer."
-        )
-        
-    with open(
-    "customer_behavior_dashboard.pbix",
-    "rb"
-) as file:
 
-       st.download_button(
-        "📥 Download Power BI Dashboard",
-        data=file,
-        file_name="customer_behavior_dashboard.pbix",
-        mime="application/octet-stream"
-    )
+    # ================= POWER BI BUTTONS =================
 
+    st.markdown("---")
+    st.subheader("📊 Power BI Dashboard File")
 
-        
+    if st.button("📂 Open Power BI"):
+        try:
+            os.startfile("customer_behavior_dashboard.pbix")
+        except Exception:
+            st.warning("Open Power BI works only on your local computer.")
 
+    if os.path.exists("customer_behavior_dashboard.pbix"):
+        with open("customer_behavior_dashboard.pbix", "rb") as file:
+            st.download_button(
+                "📥 Download Power BI Dashboard",
+                data=file,
+                file_name="customer_behavior_dashboard.pbix",
+                mime="application/octet-stream"
+            )
+    else:
+        st.error("Power BI file not found.")
 # BUSINESS INSIGHTS
 
 elif page == "Business Insights":
